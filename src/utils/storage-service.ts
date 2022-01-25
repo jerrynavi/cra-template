@@ -1,67 +1,76 @@
-import localforage from "localforage";
-import getFrom from "lodash/get";
-import setAt from "lodash/set";
-import { STORE_NAME } from "./constants";
+import getFrom from 'lodash/get';
+import setAt from 'lodash/set';
+import { STORE_NAME } from './constants';
 
 const storage = () => {
-  let _storage: LocalForage;
-  let _store: Record<string, string | number | boolean>;
+  let _storage: Storage;
+  let _store: Record<string, string | number | boolean> | undefined;
 
-  _storage = localforage;
+  _storage = localStorage;
 
   initStore();
 
-  async function initStore() {
+  /**
+   * @private
+   */
+  function initStore() {
     try {
-      const exists = await _storage.getItem(STORE_NAME);
+      const exists = _storage.getItem(STORE_NAME);
       if (!exists) {
         const data = {};
-        await _storage.setItem(STORE_NAME, data);
+        _storage.setItem(STORE_NAME, JSON.stringify(data));
       }
-      _store = (await getFromStorage(STORE_NAME)) as any;
+      _store = getFromLocalStorage(STORE_NAME);
     } catch (error) {
       console.error(error);
     }
   }
 
-  async function writeToStorage(): Promise<typeof _store | undefined> {
+  /**
+   * @private
+   */
+  function writeToLocalStorage(): void {
     try {
-      return _storage.setItem(STORE_NAME, _store);
+      return _storage.setItem(STORE_NAME, JSON.stringify(_store));
     } catch (error) {
       console.error(error);
     }
   }
 
-  async function getFromStorage<T>(key: string): Promise<T | undefined> {
+  /**
+   * @private
+   * @param key string to lookup
+   */
+  function getFromLocalStorage(key: string): typeof _store | undefined {
     try {
-      const value = await _storage.getItem<T>(key);
-      if (value == null) {
-        throw new Error("Error: No data with the specified key exists.");
+      const value = _storage.getItem(key);
+      if (value === null) {
+        throw new Error('Error: No data with the specified key exists.');
       }
-      return value;
+      return JSON.parse(value);
     } catch (error) {
       console.error(error);
     }
   }
 
-  async function get(key: string): Promise<unknown> {
+  function get<T>(key: string): T | undefined {
     if (!_store) {
-      await initStore();
+      initStore();
     }
-    return getFrom(_store, key);
+    return getFrom(_store, key) as any;
   }
 
   async function set(key: string, value: unknown) {
     try {
-      _store = setAt(_store, key, value);
-      return await writeToStorage();
+      _store = setAt(_store as any, key, value);
+      return writeToLocalStorage();
     } catch (error) {
       console.error(error);
     }
   }
 
   async function clearStorage(): Promise<void> {
-    await _storage.clear();
+    _storage.removeItem(STORE_NAME);
     _store = {};
   }
 
