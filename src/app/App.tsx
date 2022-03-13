@@ -8,10 +8,10 @@ const { locale, messages } = loadLocaleData();
 function App() {
   return (
     <div className="flex flex-col h-full w-full justify-center items-center font-secondary">
-      <p>
+      <p className="font-primary">
         <FormattedMessage id="app.primary" />
       </p>
-      <p>
+      <p className="font-secondary">
         <FormattedMessage id="app.secondary" />
       </p>
     </div>
